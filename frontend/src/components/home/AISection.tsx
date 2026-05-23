@@ -2,7 +2,9 @@
 
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Brain, Zap, Target, ChevronRight } from 'lucide-react';
+import { Brain, Zap, Target, ChevronRight, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { aiApi } from '@/lib/api';
 
 const capabilities = [
   {
@@ -22,19 +24,46 @@ const capabilities = [
   },
 ];
 
-const BRIEFING = {
-  title: 'Your AI Morning Briefing',
-  date: 'Tuesday, May 20th · 08:00 AM',
-  summary: 'Today\'s market sentiment is cautiously optimistic (+62%). Technology and Finance sectors are driving positive narrative momentum, particularly around AI infrastructure investments. Three geopolitical developments warrant monitoring: energy corridor negotiations, central bank policy signals, and upcoming tech regulation hearings.',
-  keyPoints: [
-    'OpenAI\'s GPT-4 update sends positive signals across AI ecosystem stocks',
-    'Federal Reserve language suggests rate hold through Q3 2025',
-    'EU Digital Markets Act enforcement begins creating market shifts',
-  ],
+const parseBriefing = (markdown: string, timestamp?: string) => {
+  if (!markdown) return { summary: 'Loading briefing...', keyPoints: [] };
+  
+  const lines = markdown.split('\n').map(l => l.trim()).filter(Boolean);
+  const keyPoints: string[] = [];
+  
+  for (const line of lines) {
+    if (/^(\d+\.|-|\*)\s+/.test(line)) {
+      const cleanLine = line.replace(/^(\d+\.|-|\*)\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1');
+      keyPoints.push(cleanLine);
+    }
+  }
+  
+  let dateStr = 'Just updated';
+  if (timestamp) {
+    const d = new Date(timestamp);
+    dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  }
+  
+  return {
+    title: 'Live AI Briefing',
+    date: dateStr,
+    summary: 'The latest intelligence synthesized from real-time news streams globally.',
+    keyPoints: keyPoints.slice(0, 3) 
+  };
 };
 
 export default function AISection() {
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['landing-briefing'],
+    queryFn: async () => {
+      const response = await aiApi.getBriefing();
+      return response.data;
+    },
+    staleTime: 60000 * 5,
+  });
+
+  const parsedBriefing = parseBriefing(data?.data?.briefing || '', data?.timestamp);
 
   return (
     <section id="ai" className="relative px-6 py-32 md:px-12 overflow-hidden" ref={ref}>
@@ -60,8 +89,8 @@ export default function AISection() {
             <span className="gradient-text">works for you.</span>
           </h2>
           <p className="text-muted-foreground text-base leading-relaxed">
-            Our AI layer doesn't just summarize news — it builds a dynamic understanding
-            of the information landscape, surfacing insights you'd never find manually.
+            Our AI layer doesn&apos;t just summarize news — it builds a dynamic understanding
+            of the information landscape, surfacing insights you&apos;d never find manually.
           </p>
         </motion.div>
 
@@ -103,8 +132,11 @@ export default function AISection() {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">AI Generated</p>
-                <h3 className="font-display text-sm font-semibold text-foreground">{BRIEFING.title}</h3>
-                <p className="text-[11px] text-muted-foreground/60 mt-0.5">{BRIEFING.date}</p>
+                <h3 className="font-display text-sm font-semibold text-foreground flex items-center gap-2">
+                  {parsedBriefing.title}
+                  {isLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                </h3>
+                <p className="text-[11px] text-muted-foreground/60 mt-0.5">{parsedBriefing.date}</p>
               </div>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-brand-accent to-brand-accent-2">
                 <Brain className="w-4 h-4 text-white" />
@@ -112,17 +144,25 @@ export default function AISection() {
             </div>
 
             <p className="text-[13px] text-muted-foreground leading-relaxed mb-5 border-l-2 border-primary/40 pl-3">
-              {BRIEFING.summary}
+              {parsedBriefing.summary}
             </p>
 
-            <div className="space-y-2.5 mb-5">
-              {BRIEFING.keyPoints.map((point, i) => (
-                <div key={i} className="flex items-start gap-2.5">
-                  <div className="mt-1.5 w-1 h-1 rounded-full shrink-0 bg-primary" />
-                  <span className="text-xs text-muted-foreground/80 leading-relaxed">{point}</span>
-                </div>
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="space-y-3 mb-5">
+                <div className="h-3 bg-white/5 rounded w-full animate-pulse" />
+                <div className="h-3 bg-white/5 rounded w-5/6 animate-pulse" />
+                <div className="h-3 bg-white/5 rounded w-4/6 animate-pulse" />
+              </div>
+            ) : (
+              <div className="space-y-2.5 mb-5">
+                {parsedBriefing.keyPoints.map((point, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <div className="mt-1.5 w-1 h-1 rounded-full shrink-0 bg-primary" />
+                    <span className="text-xs text-muted-foreground/80 leading-relaxed">{point}</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <button className="flex items-center gap-1.5 text-xs text-primary font-medium hover:gap-2.5 transition-all">
               Read full briefing <ChevronRight className="w-3 h-3" />

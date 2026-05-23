@@ -36,7 +36,7 @@ export default function CTASection() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/register" className="btn-primary">
-                Get started — it's free
+                Get started — it&apos;s free
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link href="/dashboard" className="btn-ghost">
