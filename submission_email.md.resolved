@@ -1,0 +1,41 @@
+Subject: Internship Assignment Submission – News Intelligence Platform – [Your Name]
+
+Dear [Hiring Manager/Recruiter Name],
+
+I hope this email finds you well. 
+
+Thank you for the opportunity to interview for the Software Engineering Internship position at [Company Name]. I thoroughly enjoyed working on this assignment, as it allowed me to showcase my full-stack engineering skills and approach to building scalable, production-ready applications.
+
+I am pleased to submit my completed project, the AI-powered News Intelligence Platform. 
+
+**Project Links:**
+*   **Live Deployment:** [Insert Vercel/Render Link Here]
+*   **GitHub Repository:** [Insert GitHub Repo Link Here]
+
+**Project Overview:**
+The News Intelligence Platform is an enterprise-grade full-stack application designed to combat information overload. It automatically aggregates global news via an automated cron-based ingestion pipeline, processes the content using OpenAI, and visualizes macro trends on a highly responsive analytics dashboard. 
+
+**Key Technologies:**
+*   **Frontend:** Next.js 15, Tailwind CSS, shadcn/ui, TanStack React Query, Zustand
+*   **Backend:** Node.js, Express.js, MongoDB Atlas (Mongoose), Redis
+*   **AI Integration:** OpenAI API (`gpt-4o-mini`)
+*   **Infrastructure:** Vercel, Render
+
+**Core Features Implemented:**
+*   **AI Processing Pipeline:** Engineered a highly optimized OpenAI integration that extracts 2-sentence summaries, sentiment classification, and key insights in a single, token-efficient JSON response.
+*   **Advanced Search & URL Synchronization:** Migrated frontend filtering state to URL Query Parameters, enabling deep-linking, bookmarkable queries, and a seamless native browser experience.
+*   **Analytics Dashboard:** Implemented a real-time visualization layer using Recharts to display sentiment distributions and trending categories.
+*   **Production-Grade Security & Performance:** Integrated tiered Redis-backed rate limiting, pinned JWT authentication, NoSQL/XSS injection guards, and Mongoose `.lean()` queries for ultra-fast data retrieval.
+
+I have included a comprehensive `README.md` within the repository that details the architecture, API endpoints, and instructions for running the project locally. 
+
+Thank you again for your time and consideration. I would welcome the opportunity to walk the engineering team through my code, discuss my architectural decisions, and explore how my skills align with the goals of your team.
+
+Looking forward to hearing from you soon.
+
+Best regards,
+
+[Your Name]
+[Your Phone Number]
+[Your LinkedIn Profile URL]
+[Your Personal Website/Portfolio URL]

@@ -1,0 +1,146 @@
+# 🚀 Production Deployment Guide — News Intelligence Platform
+
+This document outlines the end-to-end deployment strategy for the AI-powered News Intelligence Platform, utilizing **Vercel** for the Frontend, **Render** for the Backend and Redis, and **MongoDB Atlas** for the database.
+
+---
+
+## 1. Database Setup (MongoDB Atlas)
+
+1. Create a cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas). (An M10+ dedicated cluster is recommended for production).
+2. **Network Access**: Add `0.0.0.0/0` (Allow Access from Anywhere) — *Render provides dynamic IPs, making IP whitelisting unreliable unless using Render Private Networking/VPC*.
+3. **Database Access**: Create a dedicated user (e.g., `news_api_prod`) with read/write access to the specific database. Do **not** use the root cluster admin account.
+4. **Connection String**: Copy the SRV connection string for Node.js 4.1+.
+
+> **Important**: Once connected, you must manually run the index synchronization script to build the `$text` search and compound indexes. In your backend directory, run:
+> `npm run indexes:sync` (ensure `MONGODB_URI` is set locally before running).
+
+---
+
+## 2. Backend Deployment (Render)
+
+We have provided a `render.yaml` file in the root of your repository for Infrastructure-as-Code (IaC) deployment.
+
+### Automated Deployment (IaC)
+1. Push your code to GitHub.
+2. Log into [Render](https://dashboard.render.com).
+3. Go to **Blueprints** → **New Blueprint Instance**.
+4. Connect your GitHub repository. Render will automatically detect the `render.yaml`.
+5. It will prompt you to securely input the missing environment variables (marked `sync: false`).
+
+### Manual Deployment (Alternative)
+1. Create a **New Web Service**.
+2. Connect your repository.
+3. Root Directory: `backend`
+4. Build Command: `npm install && npm run build`
+5. Start Command: `npm run start`
+
+---
+
+## 3. Frontend Deployment (Vercel)
+
+Vercel provides native, zero-configuration support for Next.js applications.
+
+1. Push your code to GitHub.
+2. Log into [Vercel](https://vercel.com).
+3. Click **Add New** → **Project**.
+4. Import your GitHub repository.
+5. In the "Configure Project" screen:
+   - **Framework Preset**: Next.js (Auto-detected)
+   - **Root Directory**: Click `Edit` and select `frontend`.
+6. Expand **Environment Variables** and add:
+   - `NEXT_PUBLIC_API_URL`: The URL of your deployed Render backend (e.g., `https://news-intel-backend.onrender.com`)
+   - `NEXT_PUBLIC_API_VERSION`: `v1`
+7. Click **Deploy**.
+
+---
+
+## 4. Environment Variables Checklist
+
+### Backend (Render)
+Ensure these are securely set in the Render Dashboard under the Web Service environment settings:
+
+| Variable | Description |
+|---|---|
+| `NODE_ENV` | Must be `production` (enables HSTS, disables dev error leaks) |
+| `MONGODB_URI` | The Atlas connection string |
+| `JWT_SECRET` | 64+ char random string (Run `openssl rand -base64 64` locally) |
+| `JWT_REFRESH_SECRET`| Different 64+ char random string |
+| `OPENAI_API_KEY` | Your OpenAI project API key |
+| `REDIS_URL` | Handled automatically by `render.yaml` |
+| `ALLOWED_ORIGINS` | Your frontend Vercel URL (e.g., `https://news-intel.vercel.app`) |
+
+### Frontend (Vercel)
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_API_URL`| `https://your-render-app.onrender.com` (NO trailing slash) |
+
+---
+
+## 5. CI/CD & Pipeline Recommendations
+
+While Vercel and Render handle continuous deployment out of the box (deploying automatically on pushes to `main`), a robust CI pipeline via **GitHub Actions** is highly recommended to prevent broken deployments.
+
+Create `.github/workflows/ci.yml`:
+```yaml
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './backend/package-lock.json'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      
+  frontend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm run build
+```
+
+---
+
+## 6. Deployment Troubleshooting
+
+### ❌ Backend: CORS Errors on Login/Search
+**Cause:** The frontend is attempting to call the backend, but the backend is rejecting it.
+**Solution:** Ensure the `ALLOWED_ORIGINS` environment variable in Render exactly matches the Vercel URL, with no trailing slashes (e.g., `https://my-app.vercel.app`). Check if Vercel appended a branch preview URL instead.
+
+### ❌ Backend: Failed to connect to MongoDB
+**Cause:** Render IPs are dynamic; Atlas is blocking the connection.
+**Solution:** Ensure Atlas Network Access is set to `0.0.0.0/0`. Verify the username and password in the URI are URL-encoded if they contain special characters.
+
+### ❌ Frontend: Images not loading (400 Bad Request)
+**Cause:** News API sources change, and `next/image` is rejecting unauthorized remote patterns.
+**Solution:** The `next.config.ts` has a broad catch-all for CDNs. If a new CDN is entirely blocked by a strict rule, add the specific hostname to `remotePatterns` in `next.config.ts`.
+
+### ❌ Backend: Scheduler (Cron) Jobs Overlapping
+**Cause:** Render scaled your application to multiple instances, causing cron jobs to fire simultaneously.
+**Solution:** The backend utilizes a Redis Mutex (`jobs/scheduler.ts`) specifically to prevent this. Ensure your `REDIS_URL` is correctly connected; the mutex will gracefully drop overlapping jobs on secondary instances.

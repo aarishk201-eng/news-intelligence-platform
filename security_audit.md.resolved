@@ -1,0 +1,153 @@
+# 🔒 Security Audit Report — News Intelligence Platform
+
+## Audit Results: Before vs. After
+
+---
+
+## ✅ Already Production-Grade (No Changes Required)
+
+| Layer | Status | Details |
+|---|---|---|
+| **Helmet headers** | ✅ Excellent | CSP, HSTS, frameguard, noSniff, referrer policy — all set |
+| **CORS** | ✅ Excellent | Strict origin whitelist, no-origin blocked in prod, 24h preflight cache |
+| **MongoSanitize** | ✅ Good | `$` / `.` stripped from all req.body, req.query, req.params |
+| **XSS body encoder** | ✅ Good | Recursive HTML-encoding on all body string values |
+| **HPP protection** | ✅ Good | Duplicate query params collapsed, whitelist for arrays |
+| **Rate limiting tiers** | ✅ Good | 5 tiers (global, auth, AI, search, strict, admin) |
+| **JWT expiry/revocation** | ✅ Good | `changedPasswordAfter()` check on every request |
+| **Error handler** | ✅ Good | Non-operational errors masked from clients |
+| **Body size limit** | ✅ Good | express.json({ limit: '10mb' }) + Content-Length pre-check |
+
+---
+
+## 🔧 Vulnerabilities Fixed
+
+### 1. JWT Algorithm Substitution Attack (Critical)
+**Before:**
+```typescript
+jwt.verify(token, process.env.JWT_SECRET ?? '')
+```
+**After:**
+```typescript
+jwt.verify(token, env.JWT_SECRET, {
+  algorithms: ['HS256'],        // Pin algorithm
+  issuer:     env.JWT_ISSUER,   // Validate iss claim
+  audience:   env.JWT_AUDIENCE, // Validate aud claim
+})
+```
+**Risk mitigated:** An attacker who obtains a public key could forge tokens by switching the algorithm to RS256. Pinning to `HS256` and validating `iss`/`aud` claims completely eliminates this attack vector.
+
+### 2. Unvalidated `process.env` in Auth Critical Path (High)
+**Before:** `process.env.JWT_SECRET ?? ''` — falls back to empty string if env not loaded  
+**After:** `env.JWT_SECRET` — validated at startup, throws if missing
+
+### 3. Internal Error Message Leak (Medium)
+**Before:**
+```typescript
+error = new AppError(err.message, 500, false); // Leaks stack details
+```
+**After:**
+```typescript
+error = new AppError('An unexpected error occurred. Our team has been notified.', 500, false);
+```
+**Risk mitigated:** Programmer errors (e.g., `Cannot read property of undefined`) could reveal internal function names, file paths, and logic to attackers.
+
+### 4. Security Audit Logging Missing (Medium)
+**Before:** `console.warn(...)` in mongoSanitize callback  
+**After:** `log.warn({ key, ip, method, path, requestId })` — structured, goes to SIEM
+
+### 5. Path Traversal / Prototype Pollution / SQLi (Medium) — New
+Added `suspiciousRequestGuard` middleware that rejects requests containing:
+- `../../` — path traversal
+- `__proto__` / `constructor.prototype` — prototype pollution
+- `UNION SELECT` / `OR 1=1` — SQL injection probing
+- `%00` / `\x00` — null byte injection
+- `${...}` — server-side template injection
+
+### 6. Rate Limit Key Collision (Low)
+**Before:** Auth limiter keyed by `email ?? req.ip` (OR logic — easy to bypass)  
+**After:** Keyed by `email:ip` (AND — must be same email AND same IP)
+
+### 7. AI Limiter Not User-Aware (Low)
+**Before:** AI limiter keyed by IP — corporate NAT means all employees share one limit  
+**After:** AI limiter keys by `userId` when authenticated, falls back to IP for guests
+
+---
+
+## 🛡️ Complete Security Architecture
+
+```
+Internet
+    │
+    ▼
+┌─────────────────────────────────────────────────────────┐
+│  1. Helmet (HTTP headers)                               │
+│     CSP • HSTS • X-Frame-Options • noSniff • XSS       │
+├─────────────────────────────────────────────────────────┤
+│  2. CORS whitelist (strict origin enforcement)          │
+├─────────────────────────────────────────────────────────┤
+│  3. Global rate limiter (100 req/15min per IP)          │
+├─────────────────────────────────────────────────────────┤
+│  4. Body parser (10MB limit)                            │
+├─────────────────────────────────────────────────────────┤
+│  5. MongoSanitize (strip $ and . from all user input)   │
+├─────────────────────────────────────────────────────────┤
+│  6. XSS body encoder (HTML-encode all strings)          │
+├─────────────────────────────────────────────────────────┤
+│  7. HPP protection (deduplicate query params)           │
+├─────────────────────────────────────────────────────────┤
+│  8. SuspiciousRequestGuard (path traversal, SQLi, etc.) │
+├─────────────────────────────────────────────────────────┤
+│  9. Request ID (traceability per request)               │
+├─────────────────────────────────────────────────────────┤
+│  10. Route-specific limiters                            │
+│      Auth: 10/15min (email+IP fingerprint)              │
+│      AI:   20/min (by userId when authenticated)        │
+│      Search: 30/min                                     │
+│      Strict: 5/hour (password reset)                    │
+├─────────────────────────────────────────────────────────┤
+│  11. express-validator (field-level input validation)   │
+├─────────────────────────────────────────────────────────┤
+│  12. JWT auth (HS256 pinned, iss+aud validated)         │
+│      + changedPasswordAfter() revocation check          │
+├─────────────────────────────────────────────────────────┤
+│  13. RBAC authorize() (role-based access control)       │
+├─────────────────────────────────────────────────────────┤
+│  14. Business logic / route handlers                    │
+├─────────────────────────────────────────────────────────┤
+│  15. Global error handler (errors masked in production) │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📋 Production Security Checklist
+
+### Environment
+- [ ] `JWT_SECRET` ≥ 64 random characters (`openssl rand -base64 64`)
+- [ ] `JWT_REFRESH_SECRET` is **different** from `JWT_SECRET`
+- [ ] `JWT_ISSUER` and `JWT_AUDIENCE` set to production values
+- [ ] `MONGODB_URI` uses a dedicated database user with least-privilege (not root)
+- [ ] `OPENAI_API_KEY` has usage limits set in the OpenAI dashboard
+- [ ] `ALLOWED_ORIGINS` is set to the exact production frontend URL only
+- [ ] `NODE_ENV=production` set (enables HSTS, strict CSP, error masking)
+- [ ] All secrets rotated from development values
+
+### Infrastructure
+- [ ] HTTPS enforced at load balancer / nginx (not just HSTS header)
+- [ ] MongoDB Atlas IP Whitelist contains only backend server IPs
+- [ ] Redis protected with a strong password (`REDIS_PASSWORD`)
+- [ ] No sensitive env vars in Docker images (use secrets manager)
+
+### Monitoring
+- [ ] Failed auth attempts trigger alerts (>5 per minute)
+- [ ] Rate limit hits logged to SIEM
+- [ ] XSS/injection blocks logged and reviewed weekly
+- [ ] Dependency audit: `npm audit --audit-level=high` in CI pipeline
+- [ ] Error tracking service configured (Sentry, Datadog, etc.)
+
+### API Security
+- [ ] No sensitive data in API responses (no passwords, secrets, internal IDs in errors)
+- [ ] Admin endpoints tested to confirm `authorize('admin')` blocks non-admins
+- [ ] AI usage endpoint (`/api/v1/ai/usage`) confirmed inaccessible to regular users
+- [ ] File upload endpoints (if any) validate MIME type server-side

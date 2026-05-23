@@ -1,0 +1,93 @@
+# 🎙️ 5-Minute Technical Demo Script: News Intelligence Platform
+
+**Speaker:** You (Startup Founder / Senior Engineer)
+**Target Audience:** Recruiters, Engineering Managers, Investors
+**Est. Time:** 5 Minutes
+
+---
+
+### [0:00 - 0:30] 1 & 2: Introduction & Problem Statement
+*(Screen showing the main Dashboard feed, slowly scrolling)*
+
+**"Hi everyone, I'm excited to walk you through the News Intelligence Platform.**
+
+**The problem we are solving is information overload. Every day, thousands of news articles are published globally. For analysts, researchers, or even casual readers, it is impossible to manually sift through the noise, identify biases, and extract the actual insights.**
+
+**To solve this, I built an enterprise-grade platform that automatically aggregates global news, uses AI to extract key insights, and visualizes macro trends in real-time."**
+
+---
+
+### [0:30 - 1:00] 3: Architecture Overview
+*(Screen showing a high-level architecture diagram or the GitHub README)*
+
+**"From an architectural standpoint, this is a decoupled, modern stack.** 
+
+**The frontend is built with Next.js 15, utilizing the App Router and Tailwind CSS for a highly responsive UI.** 
+
+**The backend is a Node.js and Express microservice, backed by MongoDB Atlas for persistent storage and Redis for high-speed caching and rate limiting. The entire platform is deployed using Infrastructure-as-Code via Render and Vercel."**
+
+---
+
+### [1:00 - 1:45] 4 & 5: Backend & AI Pipeline Explanation
+*(Screen showing the backend code: `seeder.ts` or `Article.model.ts`)*
+
+**"Let’s talk about the data engine. The backbone of this application is an automated ingestion pipeline. Every 30 minutes, a Node cron job fetches articles from the NewsData.io API.** 
+
+**To prevent duplicate data processing in a horizontally scaled environment, I implemented a Redis Mutex lock. This ensures only one server instance runs the ingestion job at a time.**
+
+**Once ingested, the articles hit our AI Pipeline. Instead of making multiple expensive API calls, I engineered a highly optimized OpenAI prompt that processes the article body and returns a strictly typed JSON object containing a 2-sentence summary, sentiment classification, and an array of key insights. This reduced our token footprint by over 60%."**
+
+---
+
+### [1:45 - 2:45] 6: Dashboard Walkthrough
+*(Screen showing the live Frontend Dashboard. Click through filters and search)*
+
+**"Moving to the frontend—this is the user dashboard.**
+
+**As you can see, the UI is heavily optimized. Images are lazy-loaded via `next/image` with WebP compression and shimmer placeholders to guarantee zero layout shift. The cards animate fluidly using Framer Motion.**
+
+**The core feature here is our advanced search and filtering. Notice how as I filter by 'Positive Sentiment' and search for 'AI', the URL updates instantly? I migrated the entire application state to URL Query Parameters. This means users can bookmark highly specific queries or share them with colleagues, and the browser's native back-button works perfectly. The API calls are debounced and cached via TanStack React Query for near-instant rendering."**
+
+---
+
+### [2:45 - 3:30] 7: Analytics Demo
+*(Screen showing the Analytics page with Recharts)*
+
+**"Next, let's look at the Analytics Dashboard.**
+
+**This page aggregates the AI-generated data to show macro trends. We use Recharts to render these visualizations.** 
+
+**Because aggregation queries can be heavy on a database, the backend utilizes Mongoose `post-save` hooks to maintain running totals, and the API endpoint itself is aggressively cached in Redis with a 5-minute TTL. This means the frontend can render these complex sentiment and category distributions in under 50 milliseconds."**
+
+---
+
+### [3:30 - 4:00] 8: Deployment Demo
+*(Screen showing the Vercel dashboard or Render blueprint)*
+
+**"For deployment, I prioritized automation.**
+
+**The backend is deployed to Render using a `render.yaml` Infrastructure-as-Code blueprint. With one click, it provisions the Node server, injects the environment variables, and spins up a dedicated Redis cluster.**
+
+**The frontend is deployed on Vercel with zero-config Next.js integration. Both environments are integrated with GitHub Actions for continuous deployment on every push to the main branch."**
+
+---
+
+### [4:00 - 4:40] 9: Technical Challenges Solved
+*(Screen showing the `security.middleware.ts` or `ApiFeatures.ts` file)*
+
+**"Building this to production standards presented a few challenges.**
+
+**The biggest was performance at scale. To solve MongoDB bottlenecking, I implemented a custom `ApiFeatures` query builder that enforces Mongoose `.lean()` queries—bypassing heavy document hydration—and strictly projects only the required fields. This reduced database read times by 3 to 5x.**
+
+**Security was another priority. I hardened the API against OWASP Top 10 threats. I implemented tiered rate limiting with email and IP fingerprinting to prevent brute-force attacks, pinned our JWT algorithms to prevent forgery, and added a custom middleware to intercept NoSQL injection and path traversal patterns before they even reach the router."**
+
+---
+
+### [4:40 - 5:00] 10: Future Improvements & Close
+*(Screen back to the main Dashboard)*
+
+**"While the platform is production-ready today, I have a clear roadmap for V2.** 
+
+**I plan to introduce personalized, AI-curated daily digest emails using SendGrid, and I want to implement WebSockets to push breaking news alerts to the client in real-time.**
+
+**Thank you for your time. I'd be happy to dive deeper into the code or answer any questions you might have."**

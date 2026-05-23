@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: news-intel-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    plan: starter # Adjust based on needed resources (starts at $7/mo)
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: API_VERSION
+        value: v1
+      - key: MONGODB_URI
+        sync: false # Set via Render Dashboard
+      - key: JWT_SECRET
+        sync: false # Set via Render Dashboard
+      - key: JWT_REFRESH_SECRET
+        sync: false # Set via Render Dashboard
+      - key: JWT_ISSUER
+        value: news-intelligence-api
+      - key: JWT_AUDIENCE
+        value: news-intelligence-client
+      - key: OPENAI_API_KEY
+        sync: false # Set via Render Dashboard
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: news-intel-redis
+          property: connectionString
+      - key: ALLOWED_ORIGINS
+        sync: false # Set to your Vercel frontend URL, e.g., https://your-app.vercel.app
+
+  - type: redis
+    name: news-intel-redis
+    plan: free # Adjust for production scale
+    maxmemoryPolicy: allkeys-lru
