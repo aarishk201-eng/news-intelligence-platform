@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
+import { QueryProvider } from '@/lib/QueryProvider';
 import SmoothScroll from '@/components/SmoothScroll';
 import './globals.css';
 
@@ -37,9 +38,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans antialiased bg-background text-foreground">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-          <SmoothScroll>{children}</SmoothScroll>
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+            <SmoothScroll>{children}</SmoothScroll>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

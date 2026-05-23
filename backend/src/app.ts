@@ -93,7 +93,7 @@ app.use(suspiciousRequestGuard); // Block path traversal, proto pollution, SQLi
 
 // ─── 10. Request ID ───────────────────────────────────────────────────────────
 app.use(requestId);
-app.use(mockDataMiddleware);
+// app.use(mockDataMiddleware); // Disabled to allow real data flow
 
 // ─── 11. Global rate limiter ──────────────────────────────────────────────────
 app.use(`${API}/`, globalLimiter);

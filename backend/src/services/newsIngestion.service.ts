@@ -103,6 +103,8 @@ const fetchFromRss = async (): Promise<{ inserted: number; errors: string[] }> =
 
         const transformed = await transformArticle(pseudoRaw as never);
         if (transformed) {
+          // If we have an OpenAI key, the transformer will handle AI analysis
+          // We mark it as 'rss' so we know where it came from
           docsToInsert.push({
             ...transformed,
             ingestSource: 'rss',
@@ -113,6 +115,7 @@ const fetchFromRss = async (): Promise<{ inserted: number; errors: string[] }> =
       if (docsToInsert.length === 0) continue;
 
       try {
+        // Use a smaller batch for RSS to avoid overwhelming the AI pipeline if many are new
         const result = await Article.insertMany(docsToInsert, {
           ordered: false,
           rawResult: true,
