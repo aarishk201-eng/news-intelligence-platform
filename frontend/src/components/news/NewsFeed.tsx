@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { InboxIcon, AlertCircle } from "lucide-react";
 import { newsApi } from "@/lib/api";
@@ -9,11 +9,15 @@ import { ArticleSkeleton } from "./ArticleSkeleton";
 import { SearchFilterBar } from "./SearchFilterBar";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { useSocket } from "@/hooks/useSocket";
 
 export function NewsFeed({ savedOnly = false }: { savedOnly?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const { on, off, emit } = useSocket('/news', { autoConnect: true });
 
   // Read state entirely from URL
   const search = searchParams.get("search") || "";
@@ -45,6 +49,35 @@ export function NewsFeed({ savedOnly = false }: { savedOnly?: boolean }) {
     staleTime: 60000,
     refetchInterval: 15000,
   });
+
+  // Subscribe to real-time news updates
+  useEffect(() => {
+    if (savedOnly) return; // Don't subscribe for saved articles
+
+    // Subscribe to category or all news
+    if (category) {
+      emit('subscribe', { category });
+    } else {
+      emit('subscribe', {});
+    }
+
+    // Listen for new articles
+    const handleNewArticle = (payload: any) => {
+      if (page === 1) {
+        // Invalidate and refetch if on first page
+        queryClient.invalidateQueries({ queryKey: ["articles"] });
+      }
+    };
+
+    on('new-article', handleNewArticle);
+
+    return () => {
+      off('new-article', handleNewArticle);
+      if (category) {
+        emit('unsubscribe', { category });
+      }
+    };
+  }, [category, page, savedOnly, emit, on, off, queryClient]);
 
   const articles = data?.data || [];
   const meta = data?.meta || { totalPages: 1 };
@@ -138,3 +171,5 @@ export function NewsFeed({ savedOnly = false }: { savedOnly?: boolean }) {
     </div>
   );
 }
+
+

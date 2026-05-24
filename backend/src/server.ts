@@ -18,12 +18,21 @@ import { connectDatabase }  from './config/database';
 import { connectRedis }     from './config/redis';
 import { createLogger }     from './utils/logger';
 import { registerAllJobs, scheduler } from './jobs';
+import { initializeSocketIO, setupSocketIOHandlers } from './io';
+import { seedDatabase }     from './utils/seed';
 import http                 from 'http';
 
 const log = createLogger('Server');
 
 // ─── HTTP Server ───────────────────────────────────────────────────────────────
 const server = http.createServer(app);
+
+// ─── Socket.IO Server ──────────────────────────────────────────────────────────
+const io = initializeSocketIO(server);
+setupSocketIOHandlers(io);
+
+// Make io globally accessible for controllers/services
+global.io = io;
 
 // ─── Graceful Shutdown ─────────────────────────────────────────────────────────
 let isShuttingDown = false;
@@ -85,6 +94,9 @@ const bootstrap = async (): Promise<void> => {
     // ── 1. MongoDB ──────────────────────────────────────────────────────────
     log.info('Connecting to MongoDB...');
     await connectDatabase();
+
+    // ── 1b. Auto-seed if database is empty ─────────────────────────────────
+    await seedDatabase();
 
     // ── 2. Redis (non-fatal) ────────────────────────────────────────────────
     log.info('Connecting to Redis...');

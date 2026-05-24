@@ -25,10 +25,23 @@ export const connectDatabase = async (): Promise<void> => {
 
   try {
     await mongoose.connect(uri, mongooseOptions);
-    log.info('✅ Connected to MongoDB Atlas');
+    log.info('✅ Connected to MongoDB');
   } catch (err) {
-    log.error('❌ MongoDB Connection Error:', err);
-    throw err;
+    log.warn('⚠️ Primary MongoDB unavailable, starting in-memory MongoDB...');
+
+    try {
+      const { MongoMemoryServer } = await import('mongodb-memory-server');
+      mongod = await MongoMemoryServer.create();
+      const memUri = mongod.getUri();
+      await mongoose.connect(memUri, mongooseOptions);
+      log.info(`✅ Connected to in-memory MongoDB at ${memUri}`);
+
+      // Flag so seed can run
+      (global as any).__USING_MEMORY_DB = true;
+    } catch (memErr) {
+      log.error('❌ Could not start in-memory MongoDB:', memErr);
+      throw memErr;
+    }
   }
 };
 

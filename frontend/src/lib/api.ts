@@ -66,10 +66,11 @@ export const searchApi = {
 };
 
 export const feedApi = {
-  getStatus: () => apiClient.get('/feed/status'),
-  triggerIngest: () => apiClient.post('/feed/ingest'),
+  getStatus: () => apiClient.get('/feeds/status'),
+  triggerIngest: () => apiClient.post('/feeds/ingest'),
 };
 
 export const analyticsApi = {
   getOverview: () => apiClient.get('/analytics/overview'),
+  getStats: () => apiClient.get('/analytics/stats'),
 };

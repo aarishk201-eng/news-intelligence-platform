@@ -43,7 +43,7 @@ export function AiChat() {
       const history = messages.map(m => ({ role: m.role, content: m.content }));
       const response = await aiApi.chat(userMsg.content, history);
       
-      const aiMsg: Message = { role: "assistant", content: response.data.data };
+      const aiMsg: Message = { role: "assistant", content: response.data.data.reply };
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error) {
       console.error("Chat error:", error);

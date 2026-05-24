@@ -99,6 +99,7 @@ export const env = {
   ENABLE_AI:        optionalBool('ENABLE_AI', true),
   ENABLE_CRON:      optionalBool('ENABLE_CRON', true),
   ENABLE_CACHE:     optionalBool('ENABLE_CACHE', true),
+  SOCKETIO_ENABLED: optionalBool('SOCKETIO_ENABLED', true),
 } as const;
 
 export type Env = typeof env;

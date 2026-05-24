@@ -6,6 +6,12 @@
 import { Request } from 'express';
 import { IUser } from '../models/User.model';
 import mongoose from 'mongoose';
+import type { Server as SocketIOServer } from 'socket.io';
+
+// ─── Global Socket.IO ──────────────────────────────────────────────────────────
+declare global {
+  var io: SocketIOServer | undefined;
+}
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
 export interface AuthRequest extends Request {

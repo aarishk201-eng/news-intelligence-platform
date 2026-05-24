@@ -18,7 +18,10 @@ const log = createLogger('AiController');
 
 // ─── AI Chat ──────────────────────────────────────────────────────────────────
 export const chat = catchAsyncTyped<AuthRequest>(async (req, res, next) => {
-  if (!AI_CONFIG.enabled) return next(AppError.serviceUnavailable('AI'));
+  if (!AI_CONFIG.enabled) {
+    const mockReply = "I am currently running in offline demo mode. In a full production environment with an OpenAI API key, I would use advanced context awareness to analyze the articles you're reading and answer your questions intelligently!";
+    return sendSuccess(res, { data: { reply: mockReply, timestamp: new Date().toISOString() } });
+  }
 
   const { message, conversationHistory = [], articleId } = req.body as {
     message: string;
