@@ -55,10 +55,10 @@ export const env = {
   JWT_ISSUER:          optional('JWT_ISSUER', 'news-intelligence-api'),
   JWT_AUDIENCE:        optional('JWT_AUDIENCE', 'news-intelligence-client'),
 
-  // OpenAI
-  OPENAI_API_KEY:   optional('OPENAI_API_KEY', ''),
-  OPENAI_MODEL:     optional('OPENAI_MODEL', 'gpt-4o-mini'),
-  OPENAI_MAX_TOKENS: optionalInt('OPENAI_MAX_TOKENS', 2048),
+  // OpenRouter (OpenAI Compatible, completely free models available)
+  OPENROUTER_API_KEY: optional('OPENROUTER_API_KEY', ''),
+  OPENAI_MODEL:       optional('OPENAI_MODEL', 'meta-llama/llama-3.3-70b-instruct:free'),
+  OPENAI_MAX_TOKENS:  optionalInt('OPENAI_MAX_TOKENS', 2048),
   OPENAI_TEMPERATURE: optionalFloat('OPENAI_TEMPERATURE', 0.7),
 
   // Redis

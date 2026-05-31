@@ -20,7 +20,7 @@ const log = createLogger('ArticleValidator');
 
 // ─── Supported Languages ──────────────────────────────────────────────────────
 const SUPPORTED_LANGUAGES = new Set([
-  'en', 'ar', 'de', 'es', 'fr', 'he', 'it', 'nl', 'no', 'pt', 'ru', 'se', 'zh',
+  'en', 'english', 'ar', 'de', 'es', 'fr', 'he', 'it', 'nl', 'no', 'pt', 'ru', 'se', 'zh',
 ]);
 
 // ─── Junk Title Patterns ─────────────────────────────────────────────────────

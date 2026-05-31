@@ -57,7 +57,16 @@ export const chat = catchAsyncTyped<AuthRequest>(async (req, res, next) => {
 
 // ─── Daily Briefing ───────────────────────────────────────────────────────────
 export const getDailyBriefing = catchAsyncTyped<AuthRequest>(async (req, res, next) => {
-  if (!AI_CONFIG.enabled) return next(AppError.serviceUnavailable('AI'));
+  if (!AI_CONFIG.enabled) {
+    return sendSuccess(res, {
+      data: {
+        briefing: "### Executive Briefing (Demo Mode)\n\n**Key Developments:**\n1. **AI Safety Frameworks:** Global regulatory discussions are intensifying around AI deployment.\n2. **Market Shifts:** Tech and renewable energy sectors see significant momentum this quarter.\n3. **Local News Focus:** With regional data streams active, local elections and municipal policies are taking center stage.\n\n**Actionable Insights:**\n- Ensure compliance with upcoming tech regulations.\n- Monitor local market trends for emerging opportunities.",
+        articleCount: 12,
+        generatedAt: new Date().toISOString()
+      },
+      message: 'Daily briefing generated (Demo Mode)'
+    });
+  }
 
   const userCategories = req.user?.preferences?.categories ?? [];
   const filter = userCategories.length > 0 ? { category: { $in: userCategories } } : {};
@@ -74,13 +83,19 @@ export const getDailyBriefing = catchAsyncTyped<AuthRequest>(async (req, res, ne
     return;
   }
 
-  const briefing = await generateBriefing(
-    articles.map((a) => ({
-      title:       a.title,
-      description: a.aiAnalysis?.summary || a.description,
-      category:    (a.category as { name?: string } | null)?.name,
-    }))
-  );
+  let briefing: string;
+  try {
+    briefing = await generateBriefing(
+      articles.map((a) => ({
+        title:       a.title,
+        description: a.aiAnalysis?.summary || a.description,
+        category:    (a.category as { name?: string } | null)?.name,
+      }))
+    );
+  } catch (err) {
+    log.warn('Failed to generate briefing due to AI error:', err);
+    briefing = "⚠️ **AI Briefing Unavailable**\n\nThe AI system is currently experiencing high load (API rate limits). Please try again in a few minutes.";
+  }
 
   sendSuccess(res, {
     data: { briefing, articleCount: articles.length, generatedAt: new Date().toISOString() },
@@ -90,7 +105,15 @@ export const getDailyBriefing = catchAsyncTyped<AuthRequest>(async (req, res, ne
 
 // ─── Trending Topics ──────────────────────────────────────────────────────────
 export const getTrending = catchAsyncTyped<AuthRequest>(async (_req, res, next) => {
-  if (!AI_CONFIG.enabled) return next(AppError.serviceUnavailable('AI'));
+  if (!AI_CONFIG.enabled) {
+    const mockTopics = [
+      { topic: 'Tech Innovation', count: 24, sentiment: 'positive' },
+      { topic: 'Global Economics', count: 18, sentiment: 'neutral' },
+      { topic: 'Renewable Energy', count: 12, sentiment: 'positive' },
+      { topic: 'Local Policies', count: 8, sentiment: 'negative' }
+    ];
+    return sendSuccess(res, { data: { topics: mockTopics, count: mockTopics.length }, message: 'Trending topics extracted (Demo Mode)' });
+  }
 
   const articles = await Article.find()
     .sort({ publishedAt: -1, 'engagement.trendScore': -1 })
@@ -98,7 +121,13 @@ export const getTrending = catchAsyncTyped<AuthRequest>(async (_req, res, next) 
     .select('title')
     .lean();
 
-  const topics = await extractTrendingTopics(articles.map((a) => a.title));
+  let topics: string[];
+  try {
+    topics = await extractTrendingTopics(articles.map((a) => a.title));
+  } catch (err) {
+    log.warn('Failed to extract trending topics due to AI error:', err);
+    topics = []; // Frontend will gracefully fallback to mock topics if empty
+  }
   sendSuccess(res, { data: { topics, count: topics.length }, message: 'Trending topics extracted' });
 });
 

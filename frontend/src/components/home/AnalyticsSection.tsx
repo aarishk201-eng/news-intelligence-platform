@@ -6,13 +6,15 @@ import { BarChart2, TrendingUp, TrendingDown, Activity, Loader2 } from 'lucide-r
 import { useQuery } from '@tanstack/react-query';
 import { analyticsApi, aiApi } from '@/lib/api';
 
-const formatNumber = (num: number) => {
+const formatNumber = (num?: number) => {
+  if (num === undefined || num === null) return '0';
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
   if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
   return num.toString();
 };
 
-const getSentimentText = (score: number) => {
+const getSentimentText = (score?: number) => {
+  if (score === undefined || score === null) return 'Neutral';
   if (score > 0.3) return 'Bullish';
   if (score > 0.1) return 'Cautiously Optimistic';
   if (score > -0.1) return 'Neutral';
@@ -43,21 +45,36 @@ export default function AnalyticsSection() {
     staleTime: 60000,
   });
 
-  const overview = overviewData?.data || { articlesAnalyzed: 0, averageSentiment: 0, alertsDispatched: 0, activeSensors: 0 };
-  const trendingRaw = trendingData?.data || [];
+  const overview = overviewData?.data || {};
+  // Fix: Handle both the old string array format and the new object array format,
+  // and safely extract from .topics since the API returns { topics: [...], count: x }
+  const trendingRaw = Array.isArray(trendingData?.data?.topics) 
+    ? trendingData.data.topics 
+    : Array.isArray(trendingData?.data) 
+      ? trendingData.data 
+      : [];
 
   const metrics = [
     { label: 'Articles Processed', value: formatNumber(overview.articlesAnalyzed), sub: 'Tracked in real-time' },
-    { label: 'Avg. Sentiment Score', value: Math.abs(Math.round(overview.averageSentiment * 100)).toString(), sub: getSentimentText(overview.averageSentiment) },
+    { label: 'Avg. Sentiment Score', value: Math.abs(Math.round((overview.averageSentiment || 0) * 100)).toString(), sub: getSentimentText(overview.averageSentiment) },
     { label: 'Alerts Dispatched', value: formatNumber(overview.alertsDispatched), sub: 'Critical intel flagged' },
-    { label: 'Active Data Sensors', value: overview.activeSensors.toString(), sub: 'Global coverage' },
+    { label: 'Active Data Sensors', value: (overview.activeSensors || 0).toString(), sub: 'Global coverage' },
   ];
 
-  const trendData = trendingRaw.map((t: any) => ({
-    label: t.topic,
-    value: Math.min(t.count * 8, 100), // scale for visual bar
-    delta: t.sentiment === 'positive' ? 12 : t.sentiment === 'negative' ? -8 : 2
-  }));
+  const trendData = trendingRaw.map((t: any) => {
+    if (typeof t === 'string') {
+      return {
+        label: t,
+        value: 75,
+        delta: 5
+      };
+    }
+    return {
+      label: t.topic || 'Unknown',
+      value: Math.min((t.count || 0) * 8, 100),
+      delta: t.sentiment === 'positive' ? 12 : t.sentiment === 'negative' ? -8 : 2
+    };
+  });
 
   // Fallback if no trending data
   const finalTrends = trendData.length > 0 ? trendData : [

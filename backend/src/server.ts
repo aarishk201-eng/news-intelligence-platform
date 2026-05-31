@@ -96,7 +96,7 @@ const bootstrap = async (): Promise<void> => {
     await connectDatabase();
 
     // ── 1b. Auto-seed if database is empty ─────────────────────────────────
-    await seedDatabase();
+    // await seedDatabase(); // Disabled to allow real live news fetching without mock data
 
     // ── 2. Redis (non-fatal) ────────────────────────────────────────────────
     log.info('Connecting to Redis...');

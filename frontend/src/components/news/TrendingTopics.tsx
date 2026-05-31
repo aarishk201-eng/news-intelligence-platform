@@ -37,24 +37,27 @@ export function TrendingTopics() {
         </div>
       ) : (
         <div className="space-y-1.5">
-          {topics.slice(0, 10).map((topic, i) => (
-            <button
-              key={topic}
-              id={`topic-${i}`}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
-            >
-              <span className="w-4 shrink-0 text-xs font-bold text-muted-foreground">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <Hash className="h-3 w-3 shrink-0 text-primary" />
-              <span className="truncate text-foreground">{topic}</span>
-              {i < 3 && (
-                <span className="ml-auto shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-xs font-medium text-amber-500">
-                  Hot
+          {topics.slice(0, 10).map((topicItem, i) => {
+            const topicName = typeof topicItem === 'string' ? topicItem : (topicItem as any).topic;
+            return (
+              <button
+                key={topicName}
+                id={`topic-${i}`}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+              >
+                <span className="w-4 shrink-0 text-xs font-bold text-muted-foreground">
+                  {String(i + 1).padStart(2, '0')}
                 </span>
-              )}
-            </button>
-          ))}
+                <Hash className="h-3 w-3 shrink-0 text-primary" />
+                <span className="truncate text-foreground">{topicName}</span>
+                {i < 3 && (
+                  <span className="ml-auto shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-xs font-medium text-amber-500">
+                    Hot
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

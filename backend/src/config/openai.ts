@@ -11,16 +11,17 @@ const log = createLogger('OpenAI');
 
 // ─── Client singleton ─────────────────────────────────────────────────────────
 export const openaiClient = new OpenAI({
-  apiKey:     env.OPENAI_API_KEY || 'placeholder',
+  apiKey:     env.OPENROUTER_API_KEY || 'placeholder',
+  baseURL:    'https://openrouter.ai/api/v1',
   maxRetries: 0,          // We handle retries ourselves for fine-grained control
   timeout:    30_000,
 });
 
 // ─── Model definitions with cost per 1M tokens (USD, as of 2024) ──────────────
 export const MODELS = {
-  MINI:    'gpt-4o-mini',   // $0.15 / $0.60 input/output — default, cost-optimized
-  STANDARD:'gpt-4o',        // $2.50 / $10.00 — for high-stakes analysis
-  FAST:    'gpt-4o-mini',   // alias for clarity
+  MINI:    'meta-llama/llama-3.3-70b-instruct:free',   
+  STANDARD:'google/gemma-4-31b-it:free',        
+  FAST:    'meta-llama/llama-3.2-3b-instruct:free',   
 } as const;
 
 export type ModelId = typeof MODELS[keyof typeof MODELS];
@@ -31,8 +32,9 @@ interface ModelCost {
 }
 
 export const MODEL_COSTS: Record<string, ModelCost> = {
-  'gpt-4o-mini': { inputPer1M: 0.15,  outputPer1M: 0.60  },
-  'gpt-4o':      { inputPer1M: 2.50,  outputPer1M: 10.00 },
+  'meta-llama/llama-3.3-70b-instruct:free': { inputPer1M: 0.00,  outputPer1M: 0.00  }, // Free Tier
+  'meta-llama/llama-3.2-3b-instruct:free':  { inputPer1M: 0.00,  outputPer1M: 0.00  }, // Free Tier
+  'google/gemma-4-31b-it:free':             { inputPer1M: 0.00,  outputPer1M: 0.00 }, // Free Tier
 };
 
 // ─── AI Config (validated from env) ──────────────────────────────────────────
@@ -40,7 +42,7 @@ export const AI_CONFIG = {
   model:       (env.OPENAI_MODEL as ModelId) || MODELS.MINI,
   maxTokens:   env.OPENAI_MAX_TOKENS,
   temperature: env.OPENAI_TEMPERATURE,
-  enabled:     !!env.OPENAI_API_KEY && env.ENABLE_AI,
+  enabled:     !!env.OPENROUTER_API_KEY && env.ENABLE_AI,
 } as const;
 
 // ─── Token + cost estimation ──────────────────────────────────────────────────

@@ -624,6 +624,36 @@ articleSchema.pre('save', function (next) {
   next();
 });
 
+// ── Pre-insertMany: auto-generate fields (since insertMany bypasses save hooks) ──
+articleSchema.pre('insertMany', function (next, docs) {
+  if (Array.isArray(docs)) {
+    for (const doc of docs) {
+      if (!doc.slug && doc.title) {
+        doc.slug = generateSlug(doc.title);
+      }
+      if (!doc.urlHash && doc.url) {
+        doc.urlHash = simpleHash(normalizeUrl(doc.url));
+      }
+      if (!doc.contentHash && doc.content) {
+        doc.contentHash = simpleHash(doc.content.substring(0, 500));
+      }
+      if (doc.content && (!doc.aiAnalysis || !doc.aiAnalysis.readingTime)) {
+        const wordCount = doc.content.split(/\s+/).length;
+        if (!doc.aiAnalysis) doc.aiAnalysis = {} as any;
+        doc.aiAnalysis.readingTime = Math.max(1, Math.ceil(wordCount / 200));
+      }
+      if (doc.engagement) {
+        doc.engagement.trendScore =
+          (doc.engagement.views   || 0) +
+          (doc.engagement.shares  || 0) * 2 +
+          (doc.engagement.saves   || 0) * 3 +
+          (doc.engagement.likes   || 0);
+      }
+    }
+  }
+  next();
+});
+
 // ── Pre-save: deduplicate tags and keywords ────────────────────────────────────
 articleSchema.pre('save', function (next) {
   if (this.isModified('tags') && this.tags) {

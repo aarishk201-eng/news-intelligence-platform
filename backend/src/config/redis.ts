@@ -21,8 +21,8 @@ export const connectRedis = async (): Promise<void> => {
       },
     }) as RedisClientType;
 
-    redisClient.on('error', (err) => {
-      // Only log once to avoid spamming
+    redisClient.on('error', (_err) => {
+      // In-memory fallback mode activates automatically when Redis is down
     });
 
     redisClient.on('connect', () => logger.info('✅ Redis connected'));

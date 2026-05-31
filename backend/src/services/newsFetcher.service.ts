@@ -73,9 +73,9 @@ const fetchPage = async (
       shouldRetry: (err) => {
         if (err instanceof AxiosError) {
           const status = err.response?.status;
-          // Abort on auth / quota errors — no point retrying
-          if (status === 401 || status === 403 || status === 402) return false;
-          // Retry on timeout, network error, 429, 5xx
+          // Abort on auth, quota, or rate-limiting errors — no point retrying (free tier hits hard limits)
+          if (status === 401 || status === 403 || status === 402 || status === 429) return false;
+          // Retry on timeout, network error, 5xx
           return true;
         }
         return true;
@@ -253,16 +253,16 @@ const fetchAllPages = async (
 
 // ─── Categories / queries to fetch from NewsData.io ──────────────────────────
 const FETCH_QUERIES: NewsDataFetchParams[] = [
-  { category: 'top',          language: 'en', size: 10 },
-  { category: 'technology',   language: 'en', size: 10 },
-  { category: 'business',     language: 'en', size: 10 },
-  { category: 'science',      language: 'en', size: 10 },
-  { category: 'health',       language: 'en', size: 10 },
-  { category: 'sports',       language: 'en', size: 10 },
-  { category: 'entertainment',language: 'en', size: 10 },
-  { category: 'politics',     language: 'en', size: 10 },
-  { category: 'world',        language: 'en', size: 10 },
-  { category: 'environment',  language: 'en', size: 10 },
+  { category: 'top',          language: 'en', country: 'in', size: 10 },
+  { category: 'technology',   language: 'en', country: 'in', size: 10 },
+  { category: 'business',     language: 'en', country: 'in', size: 10 },
+  { category: 'science',      language: 'en', country: 'in', size: 10 },
+  { category: 'health',       language: 'en', country: 'in', size: 10 },
+  { category: 'sports',       language: 'en', country: 'in', size: 10 },
+  { category: 'entertainment',language: 'en', country: 'in', size: 10 },
+  { category: 'politics',     language: 'en', country: 'in', size: 10 },
+  { category: 'world',        language: 'en', country: 'in', size: 10 },
+  { category: 'environment',  language: 'en', country: 'in', size: 10 },
 ];
 
 // ─── Public Service API ────────────────────────────────────────────────────────

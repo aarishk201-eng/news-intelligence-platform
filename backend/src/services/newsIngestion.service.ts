@@ -128,7 +128,7 @@ const fetchFromRss = async (): Promise<{ inserted: number; errors: string[] }> =
         if (bulkErr.name === 'BulkWriteError' || bulkErr.name === 'MongoBulkWriteError') {
           const count = bulkErr.insertedDocs?.length ?? 0;
           totalInserted += count;
-          log.debug(`RSS [${feed.sourceName}]: +${count} inserted (some dupes skipped)`);
+          log.debug(`RSS [${feed.sourceName}]: +${count} inserted (some dupes skipped). writeErrors: ${JSON.stringify(bulkErr.writeErrors?.map(e => (e as any).errmsg))}`);
         } else {
           throw err;
         }
