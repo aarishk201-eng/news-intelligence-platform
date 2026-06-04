@@ -24,7 +24,7 @@ services:
         value: news-intelligence-api
       - key: JWT_AUDIENCE
         value: news-intelligence-client
-      - key: OPENAI_API_KEY
+      - key: OPENROUTER_API_KEY
         sync: false # Set via Render Dashboard
       - key: REDIS_URL
         fromService:
