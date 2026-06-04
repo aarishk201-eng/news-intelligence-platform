@@ -5,7 +5,7 @@ services:
     rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: npm run start
-    plan: starter # Adjust based on needed resources (starts at $7/mo)
+    plan: free # Adjust based on needed resources (starts at $7/mo)
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
