@@ -38,3 +38,4 @@ services:
     name: news-intel-redis
     plan: free # Adjust for production scale
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
