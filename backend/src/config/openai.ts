@@ -53,73 +53,7 @@ export const AI_CONFIG = {
 export const estimateTokens = (text: string): number =>
   Math.ceil(text.length / 4);
 
-// ─── Smart local briefing fallback ───────────────────────────────────────────
-const buildLocalBriefing = (
-  articles: Array<{ title: string; description: string; category?: string }>
-): string => {
-  // Group articles by category
-  const byCategory: Record<string, string[]> = {};
-  for (const a of articles.slice(0, 15)) {
-    const cat = a.category ?? 'General';
-    if (!byCategory[cat]) byCategory[cat] = [];
-    byCategory[cat].push(a.title);
-  }
 
-  const categories = Object.entries(byCategory).slice(0, 4);
-  const now = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
-  let briefing = `### Executive Briefing — ${now}\n\n**Key Developments:**\n\n`;
-  categories.forEach(([cat, titles], i) => {
-    briefing += `${i + 1}. **${cat}:** ${titles[0]}`;
-    if (titles[1]) briefing += `. Also: ${titles[1]}`;
-    briefing += '.\n';
-  });
-
-  briefing += `\n**Today's Snapshot:** ${articles.length} articles tracked across ${Object.keys(byCategory).length} categories. Stay informed and check individual sections for in-depth coverage.`;
-  return briefing;
-};
-
-export const generateBriefing = async (
-  articles: Array<{ title: string; description: string; category?: string }>
-): Promise<string> => {
-  if (articles.length === 0) return 'No recent articles available for briefing.';
-
-  // Cache key includes the article titles (changes when news changes)
-  const cacheKey = `ai:v2:briefing:${fingerprint(articles.map((a) => a.title).join('|'))}`;
-  const cached = await cacheGet<string>(cacheKey);
-  if (cached) return cached;
-
-  // Format as numbered list with category context
-  const articleLines = articles
-    .slice(0, 15)
-    .map((a, i) => {
-      const cat = a.category ? ` [${a.category}]` : '';
-      return `${i + 1}.${cat} ${a.title}: ${a.description.substring(0, 150).trim()}`;
-    });
-
-  const userPrompt = buildBriefingPrompt(articleLines);
-
-  try {
-    const briefing = await callOpenAI({
-      systemPrompt:  BRIEFING_SYSTEM_PROMPT,
-      userPrompt,
-      maxTokens:     TOKEN_BUDGETS.BRIEFING_OUTPUT,
-      temperature:   0.5,
-      jsonMode:      false,
-      operationName: 'generateBriefing',
-    });
-    const cleaned = briefing.trim();
-    await cacheSet(cacheKey, cleaned, CACHE_TTL.BRIEFING);
-    return cleaned;
-  } catch (err) {
-    // AI unavailable (rate limit / key issue) — generate a smart local briefing
-    log.warn('AI briefing failed — falling back to local briefing:', (err as Error).message);
-    const fallback = buildLocalBriefing(articles);
-    // Cache for only 10 min so we retry the AI sooner
-    await cacheSet(cacheKey, fallback, 600);
-    return fallback;
-  }
-};
 
 /**
  * Estimates cost of a single API call in USD cents.
