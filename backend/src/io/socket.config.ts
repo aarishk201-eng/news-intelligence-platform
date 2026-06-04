@@ -22,10 +22,6 @@ export const initializeSocketIO = (httpServer: HTTPServer): SocketIOServer => {
       methods: ['GET', 'POST'],
     },
     transports: ['websocket', 'polling'],
-    reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-    reconnectionAttempts: 5,
   });
 
   // Configure Redis adapter for horizontal scaling (if Redis available)
@@ -107,5 +103,5 @@ export const initializeSocketIO = (httpServer: HTTPServer): SocketIOServer => {
   return io;
 };
 
-export type SocketIOServer = SocketIOServer;
+export { SocketIOServer };
 export type SocketType = Socket;

@@ -17,10 +17,11 @@ import { createLogger } from '../utils/logger';
 const log = createLogger('AiController');
 
 // ─── AI Chat ──────────────────────────────────────────────────────────────────
-export const chat = catchAsyncTyped<AuthRequest>(async (req, res, next) => {
+export const chat = catchAsyncTyped<AuthRequest>(async (req, res) => {
   if (!AI_CONFIG.enabled) {
     const mockReply = "I am currently running in offline demo mode. In a full production environment with an OpenAI API key, I would use advanced context awareness to analyze the articles you're reading and answer your questions intelligently!";
-    return sendSuccess(res, { data: { reply: mockReply, timestamp: new Date().toISOString() } });
+    sendSuccess(res, { data: { reply: mockReply, timestamp: new Date().toISOString() } });
+    return;
   }
 
   const { message, conversationHistory = [], articleId } = req.body as {
@@ -56,9 +57,9 @@ export const chat = catchAsyncTyped<AuthRequest>(async (req, res, next) => {
 });
 
 // ─── Daily Briefing ───────────────────────────────────────────────────────────
-export const getDailyBriefing = catchAsyncTyped<AuthRequest>(async (req, res, next) => {
+export const getDailyBriefing = catchAsyncTyped<AuthRequest>(async (req, res) => {
   if (!AI_CONFIG.enabled) {
-    return sendSuccess(res, {
+    sendSuccess(res, {
       data: {
         briefing: "### Executive Briefing (Demo Mode)\n\n**Key Developments:**\n1. **AI Safety Frameworks:** Global regulatory discussions are intensifying around AI deployment.\n2. **Market Shifts:** Tech and renewable energy sectors see significant momentum this quarter.\n3. **Local News Focus:** With regional data streams active, local elections and municipal policies are taking center stage.\n\n**Actionable Insights:**\n- Ensure compliance with upcoming tech regulations.\n- Monitor local market trends for emerging opportunities.",
         articleCount: 12,
@@ -66,6 +67,7 @@ export const getDailyBriefing = catchAsyncTyped<AuthRequest>(async (req, res, ne
       },
       message: 'Daily briefing generated (Demo Mode)'
     });
+    return;
   }
 
   const userCategories = req.user?.preferences?.categories ?? [];
@@ -104,7 +106,7 @@ export const getDailyBriefing = catchAsyncTyped<AuthRequest>(async (req, res, ne
 });
 
 // ─── Trending Topics ──────────────────────────────────────────────────────────
-export const getTrending = catchAsyncTyped<AuthRequest>(async (_req, res, next) => {
+export const getTrending = catchAsyncTyped<AuthRequest>(async (_req, res) => {
   if (!AI_CONFIG.enabled) {
     const mockTopics = [
       { topic: 'Tech Innovation', count: 24, sentiment: 'positive' },
@@ -112,7 +114,8 @@ export const getTrending = catchAsyncTyped<AuthRequest>(async (_req, res, next) 
       { topic: 'Renewable Energy', count: 12, sentiment: 'positive' },
       { topic: 'Local Policies', count: 8, sentiment: 'negative' }
     ];
-    return sendSuccess(res, { data: { topics: mockTopics, count: mockTopics.length }, message: 'Trending topics extracted (Demo Mode)' });
+    sendSuccess(res, { data: { topics: mockTopics, count: mockTopics.length }, message: 'Trending topics extracted (Demo Mode)' });
+    return;
   }
 
   const articles = await Article.find()

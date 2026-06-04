@@ -41,7 +41,6 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { requestId } from './middleware/requestId';
 import { globalLimiter } from './middleware/rateLimiter.middleware';
-import { mockDataMiddleware } from './middleware/mockData.middleware';
 
 // ─── Routes ────────────────────────────────────────────────────────────────────
 import authRoutes      from './routes/auth.routes';

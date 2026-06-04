@@ -19,7 +19,6 @@ import { connectRedis }     from './config/redis';
 import { createLogger }     from './utils/logger';
 import { registerAllJobs, scheduler } from './jobs';
 import { initializeSocketIO, setupSocketIOHandlers } from './io';
-import { seedDatabase }     from './utils/seed';
 import http                 from 'http';
 
 const log = createLogger('Server');
