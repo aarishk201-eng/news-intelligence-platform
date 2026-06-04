@@ -94,8 +94,30 @@ const bootstrap = async (): Promise<void> => {
     log.info('Connecting to MongoDB...');
     await connectDatabase();
 
-    // ── 1b. Auto-seed if database is empty ─────────────────────────────────
-    // await seedDatabase(); // Disabled to allow real live news fetching without mock data
+    // ── 1b. Auto-seed categories if database is empty ──────────────────────
+    const Category = (await import('./models/Category.model')).default;
+    if (await Category.countDocuments() === 0) {
+      log.info('Database is empty. Auto-seeding categories...');
+      const CATEGORIES = [
+        { name: 'Technology',    color: '#3b82f6', icon: '💻', description: 'Tech news, AI, software, and innovation' },
+        { name: 'Politics',      color: '#ef4444', icon: '🏛️', description: 'Government, elections, and policy' },
+        { name: 'Business',      color: '#10b981', icon: '📈', description: 'Markets, economy, finance, and trade' },
+        { name: 'Science',       color: '#8b5cf6', icon: '🔬', description: 'Research, space, climate, and discovery' },
+        { name: 'Health',        color: '#f59e0b', icon: '🏥', description: 'Medical news, wellness, and healthcare' },
+        { name: 'Sports',        color: '#06b6d4', icon: '⚽', description: 'Football, basketball, Olympics, and more' },
+        { name: 'Entertainment', color: '#ec4899', icon: '🎬', description: 'Movies, music, celebrities, and culture' },
+        { name: 'World',         color: '#64748b', icon: '🌍', description: 'International news and global affairs' },
+        { name: 'General',       color: '#6366f1', icon: '📰', description: 'General news and miscellaneous topics' },
+      ];
+      await Category.insertMany(CATEGORIES);
+      log.info('Categories seeded successfully.');
+      
+      // Trigger an immediate initial fetch so the user doesn't wait 10 minutes
+      log.info('Triggering initial live news fetch...');
+      const { newsIngestionService } = await import('./services/newsIngestion.service');
+      // Fire and forget so it doesn't block server startup
+      newsIngestionService.fetchAndStoreNews().catch(err => log.error('Initial fetch failed', err));
+    }
 
     // ── 2. Redis (non-fatal) ────────────────────────────────────────────────
     log.info('Connecting to Redis...');
